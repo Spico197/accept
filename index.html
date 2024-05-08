@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="https://unpkg.com/boltcss/bolt.min.css">
+	<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+	<title>我的论文能被录取吗？</title>
+</head>
+
+<body>
+	<header>
+		<h1 class="main-title">🙏 论文录取计算器</h1>
+		<p>🥤 使用先进的AI推理算法，结合会议/期刊和稿件的实际情况，计算论文的录取结果。</p>
+		<p>📚 请填写以下信息，我们将为您提供最专业的录取建议。</p>
+		🔗 <a href="https://github.com/Spico197/accept" target="_blank">github.com/Spico197/accept</a>
+		<hr>
+	</header>
+
+	<main id="app">
+		<label for="venue">会议/期刊名称</label>
+		<p class="note">请尽可能写全称，如：“The 62nd Annual Meeting of the Association for Computational Linguistics”</p>
+		<input v-model="venue" class="full-width" id="venue" type="text">
+		<label for="year">年份</label>
+		<p class="note">请填写该会议举办的年份或期刊预计发表的时间</p>
+		<input v-model="year" class="full-width" id="year" type="number">
+		<label for="keywords">论文关键词</label>
+		<p class="note">使用逗号隔开多个，如：“信息抽取，事件抽取”</p>
+		<input v-model="keywords" class="full-width" id="keywords" type="text">
+		<div>
+			<label for="lucky-num">心里的数字</label>
+			<p class="note">请闭上眼睛，在心里想三个正整数，然后分别填入下列的框中。注意，这里的三个数字<strong>区分顺序</strong></p>
+			<div>
+				<input v-model="luckyNum1" class="lucky-num" type="number" placeholder="数字1">
+				<input v-model="luckyNum2" class="lucky-num" type="number" placeholder="数字2">
+				<input v-model="luckyNum3" class="lucky-num" type="number" placeholder="数字3">
+			</div>
+		</div>
+		<div class="center">
+			<div v-if="acceptMsgFlag">
+				<div class="confetti-container" ref="confettiContainer"></div>
+				<p class="accept-msg">You paper would be <strong class="green">Accepted</strong>!</p>
+			</div>
+			<button class="compute-btn" @click="startComputation">开始计算</button>
+			<div v-if="timerHandler">
+				<p>⏱️ {{ searchSecondsTwoDecimal }}</p>
+			</div>
+		</div>
+	</main>
+
+	<footer>
+		<hr>
+		<p>永远相信美好的事情即将发生</p>
+		<p>❤️ 你的论文会被温柔以待</p>
+	</footer>
+
+	<style>
+		body {
+			max-width: 800px;
+			width: 100%;
+			margin: 20px auto;
+			padding: 0 20px;
+		}
+
+		label {
+			margin-top: 0.5rem;
+			font-weight: bold;
+		}
+
+		footer {
+			text-align: center;
+		}
+
+		hr {
+			margin-top: 2rem;
+			margin-bottom: 2rem;
+		}
+
+		.main-title {
+			margin-top: 3rem;
+		}
+
+		.full-width {
+			max-width: 100%;
+			width: 100%;
+			margin-top: 10px;
+			margin-bottom: 20px;
+			padding: 10px;
+			font-size: 1rem;
+		}
+
+		.note {
+			font-size: 0.9rem;
+			color: #666;
+			margin-top: auto;
+			margin-bottom: auto;
+		}
+
+		.lucky-num {
+			margin-right: 1rem;
+		}
+
+		.center {
+			text-align: center;
+		}
+
+		.compute-btn {
+			margin-top: 2rem;
+			background-color: #ffc83d;
+			color: #d67d00;
+			font-weight: bold;
+		}
+
+		.compute-btn:hover {
+			background-color: #ffc83dc0;
+		}
+
+		.accept-msg {
+			margin-top: 2rem;
+			font-size: 1.5rem;
+		}
+
+		.green {
+			color: #4caf50;
+		}
+	</style>
+</body>
+
+<script>
+	const { createApp, ref, computed, onMounted, onUnmounted } = Vue
+	createApp({
+		setup() {
+			const year = ref()
+			const venue = ref('')
+			const keywords = ref('')
+			const luckyNum1 = ref()
+			const luckyNum2 = ref()
+			const luckyNum3 = ref()
+
+			const acceptMsgFlag = ref(false)
+			const timerHandler = ref(0)
+			const searchSeconds = ref(0.0)
+			const searchSecondsTwoDecimal = computed(() => {
+				return `${searchSeconds.value.toFixed(1)}s`
+			})
+			function startTimer() {
+				timerHandler.value = setInterval(() => {
+					searchSeconds.value += 0.1
+				}, 100)
+			}
+
+			function endTimer() {
+				if (timerHandler.value > 0) {
+					clearInterval(timerHandler.value)
+				}
+				timerHandler.value = 0
+			}
+
+			function getRandomSecondsFromRange(min, max) {
+				return 1000 * Math.random() * (max - min) + min;
+			}
+
+			const numParticles = 200;
+			const particleDefaults = {
+				origin: { y: 0.7 }
+			};
+
+			function fire(particleRatio, opts) {
+				confetti({
+					...particleDefaults,
+					...opts,
+					particleCount: Math.floor(numParticles * particleRatio)
+				});
+			}
+
+			function celebrate() {
+				fire(0.25, {
+					spread: 26,
+					startVelocity: 55,
+				});
+				fire(0.2, {
+					spread: 60,
+				});
+				fire(0.35, {
+					spread: 100,
+					decay: 0.91,
+					scalar: 0.8
+				});
+				fire(0.1, {
+					spread: 120,
+					startVelocity: 25,
+					decay: 0.92,
+					scalar: 1.2
+				});
+				fire(0.1, {
+					spread: 120,
+					startVelocity: 45,
+				});
+			}
+
+			function isNumber(inputVal) {
+				return !isNaN(parseFloat(inputVal)) && isFinite(inputVal);
+			}
+
+			function validForm() {
+				if (year.value < 0 || venue.value === '' || keywords.value === '' || luckyNum1.value < 0 || luckyNum2.value < 0 || luckyNum3.value < 0) {
+					alert('请填写完整信息！')
+					return false
+				}
+				if (!isNumber(year.value) || year.value < new Date().getFullYear()) {
+					alert('年份必须是数字，且必须是今年或将来的年份！')
+					return false
+				}
+				if (!isNumber(luckyNum1.value) || !isNumber(luckyNum2.value) || !isNumber(luckyNum3.value)) {
+					alert('请正确填写心里的数字！')
+					return false
+				}
+				if (luckyNum1.value === luckyNum2.value || luckyNum1.value === luckyNum3.value || luckyNum2.value === luckyNum3.value) {
+					alert('请确保三个数字不相同！')
+					return false
+				}
+				if (luckyNum1.value < 0 || luckyNum2.value < 0 || luckyNum3.value < 0) {
+					alert('请填写正整数！')
+					return false
+				}
+				return true
+			}
+
+			function startComputation() {
+				/*
+					⭐ 恭喜你发现了这个彩蛋！
+					🤫 请所有看到这里源码的朋友不要告诉别人真实的逻辑。
+					💖 永远相信自己的论文会被认真对待，并取得好的结果！
+				*/
+				if (!validForm()) {
+					return
+				}
+
+				acceptMsgFlag.value = false
+				startTimer()
+				let randomNum = getRandomSecondsFromRange(1.0, 3.0)
+				console.log('randomNum:', randomNum)
+				setTimeout(() => {
+					endTimer()
+					celebrate()
+					acceptMsgFlag.value = true
+				}, randomNum)
+			}
+
+			return {
+				year,
+				venue,
+				keywords,
+				luckyNum1,
+				luckyNum2,
+				luckyNum3,
+				timerHandler,
+				searchSecondsTwoDecimal,
+				startComputation,
+				acceptMsgFlag,
+			}
+		}
+	}).mount('#app')
+</script>
+
+</html>
